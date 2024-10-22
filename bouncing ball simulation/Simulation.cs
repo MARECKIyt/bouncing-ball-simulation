@@ -1,30 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-// bez optymalizacji jedynie 1025 piłek na 60fps a z optymalizacją (pomijając drastyczny spadek prawie do 0 fps w momencie ściśnięcia kulek) aż 6201 piłek na 120fps (chociaż piłki z wyjątkiem jednej miały promień 2 a nie 4 żeby zmieściły się na ekranie co powoduje że każda piłka ma mniej potencjalnych kolizji do sprawdzenia przez zaptymalizowany algorytm ale ciiiii) a jeżeli nie chcemy mieć dużego spadku poniżej 120fps to na 4193 piłkach działa świetnie
 namespace bouncing_ball_simulation
 {
-    public class Game1 : Game
+    public class Simulation : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         SpriteFont font;
         int w = 1920;
         int h = 1080;
-        int wS = 608;
-        int hS = 1080;
+        int wS;
+        int hS;
 
-        double dt = 1d / 120d;
+        double dt;
         List<Ball> balls = new List<Ball>{};
         List<int> sortedBalls = new List<int>();
         
         int l;
         Texture2D circTxt;
-        float g = 0;
+        float g;
 
         float coolDown;
         float saveCoolDown = 10;
@@ -43,7 +41,7 @@ namespace bouncing_ball_simulation
 
         Color[] colors = new Color[] { Color.Cyan, Color.Blue, Color.Orange, Color.Green, Color.Yellow, Color.Red, Color.Purple, Color.DeepPink, Color.White, Color.LightGreen };
 
-        public Game1()
+        public Simulation()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -57,6 +55,7 @@ namespace bouncing_ball_simulation
             Window.AllowUserResizing = true;
             _graphics.IsFullScreen = true;
             IsFixedTimeStep = true;
+            dt = 1d / 120d;
             TargetElapsedTime = TimeSpan.FromSeconds(dt);
             _graphics.ApplyChanges();
             base.Initialize();
@@ -65,14 +64,36 @@ namespace bouncing_ball_simulation
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
             circTxt = Content.Load<Texture2D>("ball");
             font = Content.Load<SpriteFont>("font");
 
-            balls.Add(new Ball(50, 1, new Vector2(50, 300), new Vector2(200, 0), Color.Blue));
-            balls.Add(new Ball(50, 4, new Vector2(550, 300), new Vector2(50, 0), Color.Orange));
-            balls.Add(new Ball(50, 5, new Vector2(550, 500), new Vector2(50, 100), Color.Green));
-            //Gas(1000, 3, 3, 1, Color.Blue, 100, 100);
+            wS = 1080;
+            hS = 1080;
+            g = 50;
+
+            // templates of physical phenomena - szablony zjawisk fizycznych
+
+            // just a few balls - po prostu kilka kulek
+            balls.Add(new Ball(111, 5, new Vector2(300, 112), new Vector2(-100, 230), Color.Blue));
+            balls.Add(new Ball(69, 1, new Vector2(250, 333), new Vector2(100, 200) , Color.Green));
+            balls.Add(new Ball(50, 0.5f, new Vector2(500, 777), new Vector2(42.0f, -125), Color.Orange));
+
+            /* // gas diffusion - dyfuzja gazów
+            g = 0;
+            Gas(500, 7, 1, Color.Blue, 100, new float[4] {0, wS * 0.5f, 0, hS});
+            Gas(350, 9, 1.5f, Color.Green, 100, new float[4] { 0.5f * wS, wS, 0, hS });
+            */
+
+            /* // buoyancy force - siła wyporu
+            Gas(3500, 3, 1, Color.DarkBlue, 100);
+            balls.Add(new Ball(69, 15, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
+            balls.Add(new Ball(69, 85, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Orange));
+            */
+
+            /* // lighter gas goes up and heavier gas goes down - lżejszy gaz idzie do góry a cięższy do dołu
+            Gas(1666, 5, 3, Color.Blue, 50, new float[4] { 0, wS, 0, hS * 0.5f});
+            Gas(1666, 5, 1, Color.Green, 50, new float[4] { 0, wS, hS * 0.5f, hS });
+            */
 
             for (int i=0; i<balls.Count; i++)
             {
@@ -112,7 +133,7 @@ namespace bouncing_ball_simulation
             {
                 if (balls[i].position.X - balls[i].radius < 0 || balls[i].position.X + balls[i].radius > wS)
                 {
-                    float mom = balls[i].mass * Math.Abs(balls[i].velocity.X) * 2;
+                    float mom = balls[i].mass * MathF.Abs(balls[i].velocity.X) * 2;
                     if (balls[i].position.Y < h / 2)
                         mom1 += mom;
                     else
@@ -171,22 +192,20 @@ namespace bouncing_ball_simulation
         {
             if (balls[b1].position.Y - balls[b1].radius - (balls[b2].position.Y - balls[b2].radius) < 0)
                 return -1;
+            else if (balls[b1].position.Y - balls[b1].radius - (balls[b2].position.Y - balls[b2].radius) == 0)
+                return 0;
             else
                 return 1;
         }
-        // functions whos generate start state
-        void Gas(int particles, int minR, int maxR, float mass, Color color, float randomVx, float randomVy)
+
+        void Gas(int particles, int r, float m, Color color, float randomV, float[] range = null)
         {
+            if (range == null) range = new float[4] { 0, wS, 0, hS};
+
             for (int i = 0; i < particles; i++)
             {
-                int r = random.Next(minR, maxR);
-                float m = (float)Math.PI * r * r * mass;
-                if (color == Color.Black)
-                {
-                    int randColor = random.Next(0, 10);
-                    balls.Add(new Ball(r, m, new Vector2((float)random.NextDouble() * wS, (float)random.NextDouble() * hS), new Vector2((float)random.NextDouble() * (randomVx * 2) - randomVx, (float)random.NextDouble() * (randomVy * 2) - randomVy), colors[randColor]));
-                }
-                balls.Add(new Ball(r, m, new Vector2((float)random.NextDouble() * wS, (float)random.NextDouble() * hS), new Vector2((float)random.NextDouble() * (randomVx * 2) - randomVx, (float)random.NextDouble() * (randomVy * 2) - randomVy), color));
+                if (color == Color.Black) color = colors[random.Next(0, 10)];
+                balls.Add(new Ball(r, m, new Vector2(random.Next((int)range[0] + r, (int)range[1] - r), random.Next((int)range[2] + r, (int)range[3] - r)), new Vector2((float)random.NextDouble() * (randomV * 2) - randomV, (float)random.NextDouble() * (randomV * 2) - randomV), color));
             }
         }
     }
@@ -222,13 +241,26 @@ namespace bouncing_ball_simulation
             {
                 velocity.Y = -velocity.Y;
                 if (position.Y - radius < 0)
+                {
+                    float d = position.Y;
                     position.Y = radius;
+                    d -= position.Y;
+                    float correction = velocity.Y * velocity.Y - 2 * d * g;
+                    if (correction > 0) velocity.Y = MathF.Sqrt(correction);
+                }
                 else
+                {
+                    float d = position.Y;
                     position.Y = h - radius;
+                    d -= position.Y;
+                    float correction = velocity.Y * velocity.Y - 2 * d * g;
+                    if (correction > 0) velocity.Y = -MathF.Sqrt(correction);
+                }
             }
 
-            velocity += new Vector2(0, g * dt);
+            velocity += new Vector2(0, g * dt * 0.5f);
             position += velocity * dt;
+            velocity += new Vector2(0, g * dt * 0.5f);
         }
 
         public void Collision(Ball ball)
@@ -251,21 +283,10 @@ namespace bouncing_ball_simulation
             
             velocity = vnLP * n + vtL * t;
             ball.velocity = bvnLP * n + bvtL * t;
-            Debug.WriteLine(color.B.ToString() + " " + vnLP + "=" + vnL + "*(" + mass + "-" + ball.mass + ")+" + "2*" + ball.mass + "*" + bvnL + ") / (" + mass + "+" + ball.mass + ")");
-            Debug.WriteLine(ball.color.B.ToString() + " " + bvnLP + "=" + bvnL + "*(" + ball.mass + "-" + mass + ")+" + "2*" + mass + "*" + vnL + ") / (" + ball.mass + "+" + mass + ")");
 
-            /*Vector2 v1 = velocity;
-            Vector2 v2 = ball.velocity;
-            float m1 = mass;
-            float m2 = ball.mass;
-            Vector2 x1 = position;
-            Vector2 x2 = ball.position;
-            velocity = v1 - (2 * m2 / (m1 + m2)) * Vector2.Dot(v1 - v2, x1 - x2) / d.LengthSquared() * (x1 - x2);
-            ball.velocity = v2 - (2 * m1 / (m2 + m1)) * Vector2.Dot(v2 - v1, x2 - x1) / d.LengthSquared() * (x2 - x1);*/
-
-            //float s = radius + ball.radius - d.Length();
-            //position += n * s * 0.5f;
-            //ball.position -= n * s * 0.5f;
+            float s = radius + ball.radius - d.Length();
+            position += 1.01f * n * s * ball.mass / (mass + ball.mass);
+            ball.position -= 1.01f * n * s * mass / (mass + ball.mass);
         }
     }
 }
