@@ -17,7 +17,7 @@ namespace bouncing_ball_simulation
         int wS;
         int hS;
 
-        double dt;
+        float dt;
         List<Ball> balls = new List<Ball>{};
         List<int> sortedBalls = new List<int>();
         
@@ -39,6 +39,7 @@ namespace bouncing_ball_simulation
         float p3;
         float p4;
         float e;
+        bool calculateMomentumAndEnergy = true;
 
         Random random = new Random();
 
@@ -57,8 +58,8 @@ namespace bouncing_ball_simulation
             _graphics.PreferredBackBufferHeight = h;
             Window.AllowUserResizing = true;
             _graphics.IsFullScreen = true;
-            IsFixedTimeStep = true;
-            dt = 1d / 120d;
+            IsFixedTimeStep = false;
+            dt = 1f / 120f;
             TargetElapsedTime = TimeSpan.FromSeconds(dt);
             _graphics.ApplyChanges();
             base.Initialize();
@@ -98,15 +99,19 @@ namespace bouncing_ball_simulation
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
 
+            /* // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
+            Gas(11000, 2, 0.1f, Color.Blue, 1);
+            balls.Add(new Ball(69, 5, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
+            balls.Add(new Ball(69, 25, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
+            balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
+            */
+
             /* // lighter gas goes up and heavier gas goes down - lżejszy gaz idzie do góry a cięższy do dołu
             Gas(1666, 5, 3, Color.Blue, 50, new float[4] { 0, wS, 0, hS * 0.5f});
             Gas(1666, 5, 1, Color.Green, 50, new float[4] { 0, wS, hS * 0.5f, hS });
             */
 
-            for (int i=0; i<balls.Count; i++)
-            {
-                sortedBalls.Add(i);
-            }
+            for (int i=0; i<balls.Count; i++) sortedBalls.Add(i);
             sortedBalls.Sort(Sort);
         }
 
@@ -115,56 +120,56 @@ namespace bouncing_ball_simulation
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            sortedBalls.Sort(Sort);
             l = balls.Count;
+            foreach (Ball b in balls) b.Move(dt, g, wS, hS);
+            sortedBalls.Sort(Sort);
 
             for (int i = 0; i < l; i++)
             {
                 Ball b1 = balls[sortedBalls[i]];
-                b1.Move((float)dt, g, wS, hS);
                 for (int j = i + 1; j<l; j++)
                 {
                     Ball b2 = balls[sortedBalls[j]];
-                    if (b1.position.Y + b1.radius - (b2.position.Y - b2.radius) > 0)
-                    {
-                        b1.Collision(b2);
-                    }
+                    if (b1.position.X + b1.radius - (b2.position.X - b2.radius) > 0) b1.Collision(b2);
                     else break;
                 }
             }
 
-            coolDown -= (float)dt;
-            e = 0;
-            for (int i = 0; i < l; i++)
+            if (calculateMomentumAndEnergy)
             {
-                Ball b = balls[i];
-                e += b.velocity.Length() * b.velocity.Length() * b.mass / 2;
-                e += b.mass * (hS - b.position.Y - b.radius) * g;
-                if (b.position.X - b.radius < 0 || b.position.X + b.radius > wS)
+                coolDown -= (float)dt;
+                e = 0;
+                for (int i = 0; i < l; i++)
                 {
-                    float mom = b.mass * MathF.Abs(b.velocity.X) * 2;
-                    if (balls[i].position.Y < h / 2) mom1 += mom;
-                    else mom2 += mom;
+                    Ball b = balls[i];
+                    e += b.velocity.Length() * b.velocity.Length() * b.mass / 2;
+                    e += b.mass * (hS - b.position.Y - b.radius) * g;
+                    if (b.position.X - b.radius < 0 || b.position.X + b.radius > wS)
+                    {
+                        float mom = b.mass * MathF.Abs(b.velocity.X) * 2;
+                        if (balls[i].position.Y < h / 2) mom1 += mom;
+                        else mom2 += mom;
+                    }
+                    else if (b.position.Y - b.radius < 0 || b.position.Y + b.radius > hS)
+                    {
+                        float mom = b.mass * Math.Abs(b.velocity.Y) * 2;
+                        if (b.position.Y < h / 2) mom4 += mom;
+                        else mom3 += mom;
+                    }
                 }
-                else if (b.position.Y - b.radius < 0 || b.position.Y + b.radius > hS)
-                {
-                    float mom = b.mass * Math.Abs(b.velocity.Y) * 2;
-                    if (b.position.Y < h / 2) mom4 += mom;
-                    else mom3 += mom;
-                }
-            }
 
-            if (coolDown < 0)
-            {
-                coolDown = saveCoolDown;
-                p1 = mom1 / (hS * saveCoolDown);
-                p2 = mom2 / (hS * saveCoolDown);
-                p3 = mom3 / (wS * saveCoolDown);
-                p4 = mom4 / (wS * saveCoolDown);
-                mom1 = 0;
-                mom2 = 0;
-                mom3 = 0;
-                mom4 = 0;
+                if (coolDown < 0)
+                {
+                    coolDown = saveCoolDown;
+                    p1 = mom1 / (hS * saveCoolDown);
+                    p2 = mom2 / (hS * saveCoolDown);
+                    p3 = mom3 / (wS * saveCoolDown);
+                    p4 = mom4 / (wS * saveCoolDown);
+                    mom1 = 0;
+                    mom2 = 0;
+                    mom3 = 0;
+                    mom4 = 0;
+                }
             }
 
             base.Update(gameTime);
@@ -186,11 +191,14 @@ namespace bouncing_ball_simulation
             }
 
             _spriteBatch.DrawString(font, ((int)(1 / (float)gameTime.ElapsedGameTime.TotalSeconds)).ToString(), new Vector2(wS + 1, 1), Color.White);
-            _spriteBatch.DrawString(font, ((int)(p4 + 0.5)).ToString(), new Vector2(wS + 1, 71), Color.White);
-            _spriteBatch.DrawString(font, ((int)(p1 + 0.5)).ToString(), new Vector2(wS + 1, 101), Color.White);
-            _spriteBatch.DrawString(font, ((int)(p2 + 0.5)).ToString(), new Vector2(wS + 1, 131), Color.White);
-            _spriteBatch.DrawString(font, ((int)(p3 + 0.5)).ToString(), new Vector2(wS + 1, 161), Color.White);
-            _spriteBatch.DrawString(font, ((int)(e + 0.5)).ToString(), new Vector2(wS + 1, 251), Color.White);
+            if (calculateMomentumAndEnergy)
+            {
+                _spriteBatch.DrawString(font, ((int)(p4 + 0.5)).ToString(), new Vector2(wS + 1, 71), Color.White);
+                _spriteBatch.DrawString(font, ((int)(p1 + 0.5)).ToString(), new Vector2(wS + 1, 101), Color.White);
+                _spriteBatch.DrawString(font, ((int)(p2 + 0.5)).ToString(), new Vector2(wS + 1, 131), Color.White);
+                _spriteBatch.DrawString(font, ((int)(p3 + 0.5)).ToString(), new Vector2(wS + 1, 161), Color.White);
+                _spriteBatch.DrawString(font, ((int)(e + 0.5)).ToString(), new Vector2(wS + 1, 251), Color.White);
+            }
 
             _spriteBatch.End();
 
@@ -198,9 +206,9 @@ namespace bouncing_ball_simulation
         }
         int Sort(int b1, int b2)
         {
-            if (balls[b1].position.Y - balls[b1].radius - (balls[b2].position.Y - balls[b2].radius) < 0)
+            if (balls[b1].position.X - balls[b1].radius - (balls[b2].position.X - balls[b2].radius) < 0)
                 return -1;
-            else if (balls[b1].position.Y - balls[b1].radius - (balls[b2].position.Y - balls[b2].radius) == 0)
+            else if (balls[b1].position.X - balls[b1].radius - (balls[b2].position.X - balls[b2].radius) == 0)
                 return 0;
             else
                 return 1;

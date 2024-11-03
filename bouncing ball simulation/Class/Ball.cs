@@ -57,10 +57,11 @@ namespace bouncing_ball_simulation.Class
         public void Collision(Ball ball)
         {
             Vector2 d = position - ball.position;
-            float dL = d.Length();
+            float dL = d.LengthSquared();
             float minD = radius + ball.radius;
 
-            if (minD < dL) return;
+            if (minD * minD < dL) return;
+            dL = MathF.Sqrt(dL);
 
             Vector2 n = Vector2.Normalize(d);
             Vector2 t = Vector2.Normalize(new Vector2(-n.Y, n.X));
