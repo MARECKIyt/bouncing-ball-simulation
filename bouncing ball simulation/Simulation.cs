@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using bouncing_ball_simulation.Class;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -39,7 +40,7 @@ namespace bouncing_ball_simulation
         float p3;
         float p4;
         float e;
-        bool calculateMomentumAndEnergy = true;
+        bool calculatePressureAndEnergy = true;
 
         Random random = new Random();
 
@@ -61,6 +62,9 @@ namespace bouncing_ball_simulation
             IsFixedTimeStep = false;
             dt = 1f / 120f;
             TargetElapsedTime = TimeSpan.FromSeconds(dt);
+            wS = 1080;
+            hS = 1080;
+            g = 50;
             _graphics.ApplyChanges();
             base.Initialize();
         }
@@ -71,10 +75,6 @@ namespace bouncing_ball_simulation
             smallCircTxt = Content.Load<Texture2D>("smallBall");
             bigCircTxt = Content.Load<Texture2D>("bigBall");
             font = Content.Load<SpriteFont>("font");
-
-            wS = 1080;
-            hS = 1080;
-            g = 50;
 
             // templates of physical phenomena - szablony zjawisk fizycznych
 
@@ -100,8 +100,8 @@ namespace bouncing_ball_simulation
             */
 
             /* // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
-            Gas(11000, 2, 0.1f, Color.Blue, 1);
-            balls.Add(new Ball(69, 5, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
+            Gas(20000, 1, 0.1f, Color.Blue, 1);
+            balls.Add(new Ball(69, 10, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
             balls.Add(new Ball(69, 25, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
@@ -110,6 +110,7 @@ namespace bouncing_ball_simulation
             Gas(1666, 5, 3, Color.Blue, 50, new float[4] { 0, wS, 0, hS * 0.5f});
             Gas(1666, 5, 1, Color.Green, 50, new float[4] { 0, wS, hS * 0.5f, hS });
             */
+
 
             for (int i=0; i<balls.Count; i++) sortedBalls.Add(i);
             sortedBalls.Sort(Sort);
@@ -124,18 +125,18 @@ namespace bouncing_ball_simulation
             foreach (Ball b in balls) b.Move(dt, g, wS, hS);
             sortedBalls.Sort(Sort);
 
-            for (int i = 0; i < l; i++)
+            Parallel.For(0, l, i =>
             {
                 Ball b1 = balls[sortedBalls[i]];
-                for (int j = i + 1; j<l; j++)
+                for (int j = i + 1; j < l; j++)
                 {
                     Ball b2 = balls[sortedBalls[j]];
                     if (b1.position.X + b1.radius - (b2.position.X - b2.radius) > 0) b1.Collision(b2);
                     else break;
                 }
-            }
+            });
 
-            if (calculateMomentumAndEnergy)
+            if (calculatePressureAndEnergy)
             {
                 coolDown -= (float)dt;
                 e = 0;
@@ -178,12 +179,10 @@ namespace bouncing_ball_simulation
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-
             _spriteBatch.Begin();
 
-            for (int i = 0; i < l; i++)
+            foreach (Ball ball in balls)
             {
-                Ball ball = balls[i];
                 Texture2D txt;
                 if (ball.radius > 12) txt = bigCircTxt;
                 else txt = smallCircTxt;
@@ -191,7 +190,7 @@ namespace bouncing_ball_simulation
             }
 
             _spriteBatch.DrawString(font, ((int)(1 / (float)gameTime.ElapsedGameTime.TotalSeconds)).ToString(), new Vector2(wS + 1, 1), Color.White);
-            if (calculateMomentumAndEnergy)
+            if (calculatePressureAndEnergy)
             {
                 _spriteBatch.DrawString(font, ((int)(p4 + 0.5)).ToString(), new Vector2(wS + 1, 71), Color.White);
                 _spriteBatch.DrawString(font, ((int)(p1 + 0.5)).ToString(), new Vector2(wS + 1, 101), Color.White);
@@ -201,7 +200,6 @@ namespace bouncing_ball_simulation
             }
 
             _spriteBatch.End();
-
             base.Draw(gameTime);
         }
         int Sort(int b1, int b2)
