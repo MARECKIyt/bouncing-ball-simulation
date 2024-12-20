@@ -17,10 +17,10 @@ namespace bouncing_ball_simulation
         int h = 1080;
         int wS;
         int hS;
+        float timeScale = 1f;
 
         float dt;
         List<Ball> balls = new List<Ball>{};
-        List<int> sortedBalls = new List<int>();
         
         int l;
         float g;
@@ -40,6 +40,7 @@ namespace bouncing_ball_simulation
         float p3;
         float p4;
         float e;
+        bool showFPS = true;
         bool calculatePressureAndEnergy = true;
 
         Random random = new Random();
@@ -60,7 +61,7 @@ namespace bouncing_ball_simulation
             Window.AllowUserResizing = true;
             _graphics.IsFullScreen = true;
             IsFixedTimeStep = false;
-            dt = 1f / 120f;
+            dt = 1f / 120f; // to jest docelowy delta time jeżeli symulacja nie będzie w stanie działać tak szybko to zachowa swoją dokładność ale symulacja zwolni
             TargetElapsedTime = TimeSpan.FromSeconds(dt);
             wS = 1080;
             hS = 1080;
@@ -77,7 +78,6 @@ namespace bouncing_ball_simulation
             font = Content.Load<SpriteFont>("font");
 
             // templates of physical phenomena - szablony zjawisk fizycznych
-
             // just a few balls - po prostu kilka kulek
             balls.Add(new Ball(111, 5, new Vector2(300, 112), new Vector2(-100, 230), Color.Blue));
             balls.Add(new Ball(69, 1, new Vector2(250, 333), new Vector2(100, 200) , Color.Green));
@@ -89,7 +89,7 @@ namespace bouncing_ball_simulation
             /* // gas diffusion - dyfuzja gazów
             g = 0;
             Gas(500, 7, 10, Color.Blue, 100, new float[4] {0, wS * 0.5f, 0, hS});
-            Gas(350, 9, 15f, Color.Green, 100, new float[4] { 0.5f * wS, wS, 0, hS });
+            Gas(350, 9, 150, Color.Green, 100, new float[4] { 0.5f * wS, wS, 0, hS });
             */
 
             /* // buoyancy force - siła wyporu
@@ -100,9 +100,9 @@ namespace bouncing_ball_simulation
             */
 
             /* // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
-            Gas(20000, 1, 0.1f, Color.Blue, 1);
+            Gas(25000, 1, 0.1f, Color.Blue, 1);
             balls.Add(new Ball(69, 10, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
-            balls.Add(new Ball(69, 25, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
+            balls.Add(new Ball(69, 35, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
 
@@ -111,9 +111,7 @@ namespace bouncing_ball_simulation
             Gas(1666, 5, 1, Color.Green, 50, new float[4] { 0, wS, hS * 0.5f, hS });
             */
 
-
-            for (int i=0; i<balls.Count; i++) sortedBalls.Add(i);
-            sortedBalls.Sort(Sort);
+            balls.Sort(Sort);
         }
 
         protected override void Update(GameTime gameTime)
@@ -122,15 +120,14 @@ namespace bouncing_ball_simulation
                 Exit();
 
             l = balls.Count;
-            foreach (Ball b in balls) b.Move(dt, g, wS, hS);
-            sortedBalls.Sort(Sort);
-
+            Parallel.ForEach(balls, b => { b.Move(dt, g, wS, hS, timeScale); });
+            balls.Sort(Sort);
             Parallel.For(0, l, i =>
             {
-                Ball b1 = balls[sortedBalls[i]];
+                Ball b1 = balls[i];
                 for (int j = i + 1; j < l; j++)
                 {
-                    Ball b2 = balls[sortedBalls[j]];
+                    Ball b2 = balls[j];
                     if (b1.position.X + b1.radius - (b2.position.X - b2.radius) > 0) b1.Collision(b2);
                     else break;
                 }
@@ -138,7 +135,7 @@ namespace bouncing_ball_simulation
 
             if (calculatePressureAndEnergy)
             {
-                coolDown -= (float)dt;
+                coolDown -= dt;
                 e = 0;
                 for (int i = 0; i < l; i++)
                 {
@@ -172,7 +169,6 @@ namespace bouncing_ball_simulation
                     mom4 = 0;
                 }
             }
-
             base.Update(gameTime);
         }
 
@@ -189,7 +185,7 @@ namespace bouncing_ball_simulation
                 _spriteBatch.Draw(txt, new Rectangle((int)(ball.position.X + 0.5f) - ball.radius, (int)(ball.position.Y + 0.5f - ball.radius), ball.radius * 2, ball.radius * 2), ball.color);
             }
 
-            _spriteBatch.DrawString(font, ((int)(1 / (float)gameTime.ElapsedGameTime.TotalSeconds)).ToString(), new Vector2(wS + 1, 1), Color.White);
+            if (showFPS) _spriteBatch.DrawString(font, ((int)(1 / (float)gameTime.ElapsedGameTime.TotalSeconds)).ToString(), new Vector2(wS + 1, 1), Color.White);
             if (calculatePressureAndEnergy)
             {
                 _spriteBatch.DrawString(font, ((int)(p4 + 0.5)).ToString(), new Vector2(wS + 1, 71), Color.White);
@@ -202,12 +198,10 @@ namespace bouncing_ball_simulation
             _spriteBatch.End();
             base.Draw(gameTime);
         }
-        int Sort(int b1, int b2)
+        int Sort(Ball b1, Ball b2)
         {
-            if (balls[b1].position.X - balls[b1].radius - (balls[b2].position.X - balls[b2].radius) < 0)
+            if (b1.position.X - b1.radius < b2.position.X - b2.radius)
                 return -1;
-            else if (balls[b1].position.X - balls[b1].radius - (balls[b2].position.X - balls[b2].radius) == 0)
-                return 0;
             else
                 return 1;
         }

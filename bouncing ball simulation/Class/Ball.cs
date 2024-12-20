@@ -20,7 +20,7 @@ namespace bouncing_ball_simulation.Class
             color = c;
         }
 
-        public void Move(float dt, float g, int w, int h)
+        public void Move(float dt, float g, int w, int h, float timeScale)
         {
             if (position.X - radius < 0 || position.X + radius > w)
             {
@@ -49,9 +49,9 @@ namespace bouncing_ball_simulation.Class
                 }
             }
 
-            velocity += new Vector2(0, g * dt * 0.5f);
-            position += velocity * dt;
-            velocity += new Vector2(0, g * dt * 0.5f);
+            velocity += new Vector2(0, dt * g * 0.5f * timeScale);
+            position += dt * velocity * timeScale;
+            velocity += new Vector2(0, dt * g * 0.5f * timeScale);
         }
 
         public void Collision(Ball ball)
