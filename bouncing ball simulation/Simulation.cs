@@ -78,13 +78,13 @@ namespace bouncing_ball_simulation
             font = Content.Load<SpriteFont>("galleryFont");
 
             // templates of physical phenomena - szablony zjawisk fizycznych
-            /*// just a few balls - po prostu kilka kulek
+            // just a few balls - po prostu kilka kulek
             balls.Add(new Ball(111, 5, new Vector2(300, 112), new Vector2(-100, 230), Color.Blue));
             balls.Add(new Ball(69, 1, new Vector2(250, 333), new Vector2(100, 200) , Color.Green));
             balls.Add(new Ball(50, 0.5f, new Vector2(500, 777), new Vector2(42.0f, -125), Color.Orange));
             balls.Add(new Ball(55, 0.6f, new Vector2(575, 961), new Vector2(60, -125), Color.Yellow));
             balls.Add(new Ball(55, 0.6f, new Vector2(900, 100), new Vector2(0, 0), Color.Purple));
-            /*
+            
 
             /* // gas diffusion - dyfuzja gazów
             g = 0;
@@ -99,12 +99,12 @@ namespace bouncing_ball_simulation
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
 
-            // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
+            /* // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
             Gas(25000, 1, 0.1f, Color.Blue, 1);
             balls.Add(new Ball(69, 10, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
             balls.Add(new Ball(69, 35, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
-            
+            */
 
             /* // lighter gas goes up and heavier gas goes down - lżejszy gaz idzie do góry a cięższy do dołu
             Gas(1666, 5, 3, Color.Blue, 50, new float[4] { 0, wS, 0, hS * 0.5f});
