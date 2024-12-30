@@ -79,11 +79,13 @@ namespace bouncing_ball_simulation
 
             // templates of physical phenomena - szablony zjawisk fizycznych
             // just a few balls - po prostu kilka kulek
+            g = 100;
             balls.Add(new Ball(111, 5, new Vector2(300, 112), new Vector2(-100, 230), Color.Blue));
             balls.Add(new Ball(69, 1, new Vector2(250, 333), new Vector2(100, 200) , Color.Green));
             balls.Add(new Ball(50, 0.5f, new Vector2(500, 777), new Vector2(42.0f, -125), Color.Orange));
             balls.Add(new Ball(55, 0.6f, new Vector2(575, 961), new Vector2(60, -125), Color.Yellow));
             balls.Add(new Ball(55, 0.6f, new Vector2(900, 100), new Vector2(0, 0), Color.Purple));
+            
             
 
             /* // gas diffusion - dyfuzja gazów
@@ -198,7 +200,7 @@ namespace bouncing_ball_simulation
             _spriteBatch.End();
             base.Draw(gameTime);
         }
-        int Sort(Ball b1, Ball b2)
+        static int Sort(Ball b1, Ball b2)
         {
             if (b1.position.X - b1.radius < b2.position.X - b2.radius)
                 return -1;
