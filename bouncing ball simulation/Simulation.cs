@@ -61,7 +61,7 @@ namespace bouncing_ball_simulation
             Window.AllowUserResizing = true;
             _graphics.IsFullScreen = true;
             IsFixedTimeStep = false;
-            dt = 1f / 120f; // to jest docelowy delta time jeżeli symulacja nie będzie w stanie działać tak szybko to zachowa swoją dokładność ale symulacja zwolni
+            dt = 1f / 120f; // to jest docelowy delta time jeżeli symulacja nie będzie w stanie działać tak szybko to zachowa swoją dokładność ale symulacja zwolni (przynajmniej tak powinno być)
             TargetElapsedTime = TimeSpan.FromSeconds(dt);
             wS = 1080;
             hS = 1080;
@@ -86,31 +86,37 @@ namespace bouncing_ball_simulation
             balls.Add(new Ball(55, 0.6f, new Vector2(575, 961), new Vector2(60, -125), Color.Yellow));
             balls.Add(new Ball(55, 0.6f, new Vector2(900, 100), new Vector2(0, 0), Color.Purple));
             
-            
 
-            /* // gas diffusion - dyfuzja gazów
+            /*// gas diffusion - dyfuzja gazów
             g = 0;
             Gas(500, 7, 10, Color.Blue, 100, new float[4] {0, wS * 0.5f, 0, hS});
             Gas(350, 9, 150, Color.Green, 100, new float[4] { 0.5f * wS, wS, 0, hS });
             */
 
-            /* // buoyancy force - siła wyporu
+            /*// buoyancy force - siła wyporu
             Gas(3500, 3, 1, Color.DarkBlue, 100);
             balls.Add(new Ball(69, 15, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
             balls.Add(new Ball(69, 85, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
 
-            /* // buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
+            /*// buoyancy force with more balls - siła wyporu z wiekszą ilością kulek
+            timeScale = 1f;
             Gas(25000, 1, 0.1f, Color.Blue, 1);
             balls.Add(new Ball(69, 10, new Vector2(wS * 0.25f, hS * 0.5f), Vector2.Zero, Color.Green));
             balls.Add(new Ball(69, 35, new Vector2(wS * 0.5f, hS * 0.5f), Vector2.Zero, Color.Orange));
             balls.Add(new Ball(69, 420, new Vector2(wS * 0.75f, hS * 0.5f), Vector2.Zero, Color.Yellow));
             */
 
-            /* // lighter gas goes up and heavier gas goes down - lżejszy gaz idzie do góry a cięższy do dołu
+            /*// lighter gas goes up and heavier gas goes down - lżejszy gaz idzie do góry a cięższy do dołu
             Gas(1666, 5, 3, Color.Blue, 50, new float[4] { 0, wS, 0, hS * 0.5f});
             Gas(1666, 5, 1, Color.Green, 50, new float[4] { 0, wS, hS * 0.5f, hS });
+            */
+            
+            /*// lighter gas goes up and heavier gas goes down with more balls - lżejszy gaz idzie do góry a cięższy do dołu z większą ilością kulek
+            timeScale = 0.125f;
+            Gas(6000, 3, 0.5f, Color.Blue, 1, new float[4] { 0, wS, 0, hS * 0.5f});
+            Gas(9000, 3, 0.1f, Color.Green, 1, new float[4] { 0, wS, hS * 0.5f, hS });
             */
 
             balls.Sort(Sort);
@@ -142,8 +148,9 @@ namespace bouncing_ball_simulation
                 for (int i = 0; i < l; i++)
                 {
                     Ball b = balls[i];
-                    e += b.velocity.Length() * b.velocity.Length() * b.mass / 2;
+                    e += b.velocity.LengthSquared() * b.mass * 0.5f;
                     e += b.mass * (hS - b.position.Y - b.radius) * g;
+
                     if (b.position.X - b.radius < 0 || b.position.X + b.radius > wS)
                     {
                         float mom = b.mass * MathF.Abs(b.velocity.X) * 2;
@@ -215,7 +222,14 @@ namespace bouncing_ball_simulation
             for (int i = 0; i < particles; i++)
             {
                 if (color == Color.Black) color = colors[random.Next(0, 10)];
-                balls.Add(new Ball(r, m, new Vector2(random.Next((int)range[0] + r, (int)range[1] - r), random.Next((int)range[2] + r, (int)range[3] - r)), new Vector2((float)random.NextDouble() * (randomV * 2) - randomV, (float)random.NextDouble() * (randomV * 2) - randomV), color));
+                float vx = 0;
+                float vy = 0;
+                if (randomV > 0)
+                {
+                    vx = (float)random.NextDouble() * (randomV * 2) - randomV;
+                    vy = (float)random.NextDouble() * (randomV * 2) - randomV;
+                }
+                balls.Add(new Ball(r, m, new Vector2(random.Next((int)range[0] + r, (int)range[1] - r), random.Next((int)range[2] + r, (int)range[3] - r)), new Vector2(vx, vy), color));
             }
         }
     }

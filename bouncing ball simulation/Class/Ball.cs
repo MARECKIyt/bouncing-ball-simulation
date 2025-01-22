@@ -22,6 +22,11 @@ namespace bouncing_ball_simulation.Class
 
         public void Move(float dt, float g, int w, int h, float timeScale)
         {
+            if (!(velocity.Length() >= 0))
+            {
+                Console.WriteLine("suspicious velocity");
+            }
+            
             if (position.X - radius < 0 || position.X + radius > w)
             {
                 velocity.X = -velocity.X;
@@ -49,9 +54,10 @@ namespace bouncing_ball_simulation.Class
                 }
             }
 
-            velocity += new Vector2(0, dt * g * 0.5f * timeScale);
+            Vector2 acceleration = new Vector2(0, g * dt * timeScale * 0.5f);
+            velocity += acceleration;
             position += dt * velocity * timeScale;
-            velocity += new Vector2(0, dt * g * 0.5f * timeScale);
+            velocity += acceleration;
         }
 
         public void Collision(Ball ball)
